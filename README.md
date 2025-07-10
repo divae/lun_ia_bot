@@ -75,6 +75,7 @@ lun_IA_bot/
 ├── user_notes.json        # Notas de usuarios (se crea automáticamente)
 ├── requirements.txt       # Dependencias de Python
 ├── .env                   # Variables de entorno (no incluido en git)
+├── LICENSE                # Licencia MIT del proyecto
 └── README.md             # Este archivo
 ```
 
@@ -147,7 +148,7 @@ Seguimos [Conventional Commits](https://carlosazaustre.es/conventional-commits):
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+Este proyecto está bajo la Licencia MIT. El archivo `LICENSE` ya está incluido y nombra explícitamente a Estela García como autora del código.
 
 ## 🙏 Agradecimientos
 
