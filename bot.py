@@ -7,9 +7,11 @@ import json
 from telegram.ext import ApplicationBuilder
 import locale
 from astral import LocationInfo
-from astral.moon import moonrise
+from astral.moon import moonrise, phase
+from astral.sun import sun
 from telegram.ext import ConversationHandler, MessageHandler, filters
 from telegram import BotCommand, ReplyKeyboardMarkup
+import math
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_TOKEN')
@@ -25,6 +27,10 @@ MOON_PHASE_NAMES = ["Luna Nueva", "Cuarto Creciente", "Luna Llena", "Cuarto Meng
 # Cargar datos desde el archivo JSON
 with open("moon_data.json", encoding="utf-8") as f:
     MOON_DATA = json.load(f)
+
+# Cargar datos científicos
+with open("moon_science_data.json", encoding="utf-8") as f:
+    MOON_SCIENCE_DATA = json.load(f)
 
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
@@ -71,6 +77,47 @@ def days_until_new_moon():
         days = MOON_CYCLE_DAYS
     return days
 
+def get_moon_illumination():
+    """Get current moon illumination percentage."""
+    now = datetime.now()
+    moon_phase_value = phase(now)
+    # Convert phase (0-1) to illumination percentage
+    illumination = abs(math.sin(moon_phase_value * math.pi)) * 100
+    return round(illumination, 1)
+
+def get_moon_distance():
+    """Get approximate distance to moon in km."""
+    # Simplified calculation - moon distance varies between ~356,000 and ~406,000 km
+    now = datetime.now()
+    # Use day of year to approximate distance variation
+    day_of_year = now.timetuple().tm_yday
+    base_distance = 384400  # Average distance in km
+    variation = 25000 * math.sin(2 * math.pi * day_of_year / 365.25)
+    distance = base_distance + variation
+    return round(distance, -3)  # Round to nearest 1000
+
+def get_zodiac_sign():
+    """Get current zodiac sign for the moon."""
+    # Simplified zodiac calculation based on date
+    now = datetime.now()
+    month = now.month
+    day = now.day
+    
+    zodiac_signs = [
+        ("Capricornio", 1, 19), ("Acuario", 1, 20), ("Piscis", 2, 19),
+        ("Aries", 3, 20), ("Tauro", 4, 20), ("Géminis", 5, 21),
+        ("Cáncer", 6, 21), ("Leo", 7, 22), ("Virgo", 8, 22),
+        ("Libra", 9, 22), ("Escorpio", 10, 22), ("Sagitario", 11, 21),
+        ("Capricornio", 12, 22)
+    ]
+    
+    for sign, start_month, start_day in zodiac_signs:
+        if (month == start_month and day >= start_day) or \
+           (month == (start_month % 12) + 1 and day < zodiac_signs[zodiac_signs.index((sign, start_month, start_day)) + 1][2] if zodiac_signs.index((sign, start_month, start_day)) < len(zodiac_signs) - 1 else zodiac_signs[0][2]):
+            return sign
+    
+    return "Capricornio"  # Default fallback
+
 # Fragmento reutilizable para recordar los comandos disponibles
 COMMANDS_REMINDER = (
     "\n━━━━━━━━━━━━━━\n"
@@ -89,12 +136,13 @@ async def moon(update, context):
     idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[idx]
     phase_data = MOON_DATA[phase_name]
+    science_data = MOON_SCIENCE_DATA[phase_name]
     days = days_until_new_moon()
-    recommendation = random.choice(phase_data["recommendations"])
-    ritual = random.choice(phase_data["rituals"])
-    quote = random.choice(phase_data["quotes"])
-    tip = random.choice(phase_data["tips"])
+    illumination = get_moon_illumination()
+    distance = get_moon_distance()
+    zodiac = get_zodiac_sign()
     now = datetime.now().strftime('%A, %-d de %B de %Y')
+    date_formatted = datetime.now().strftime('%-d %B %Y')
 
     # Moonrise for Madrid (hemisferio norte)
     madrid = LocationInfo("Madrid", "Spain", "Europe/Madrid", 40.4168, -3.7038)
@@ -111,20 +159,38 @@ async def moon(update, context):
     except Exception:
         moonrise_ba_str = "No visible"
 
+    # Determinar emoji de fase lunar
+    phase_emoji = {
+        "Luna Nueva": "🌑",
+        "Cuarto Creciente": "🌓", 
+        "Luna Llena": "🌕",
+        "Cuarto Menguante": "🌗"
+    }
+
     message = (
-        f"✨ *LUN.IA - Mensaje Lunar Diario* ✨\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📅 *{now.capitalize()}*\n"
-        f"🌙 *Fase lunar:* {phase_name}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🔮 *Recomendación:*\n{recommendation}\n\n"
-        f"🧘 *Ritual:*\n{ritual}\n\n"
-        f"💬 *Cita del día:*\n_{quote}_\n\n"
-        f"🗓️ *Próxima Luna Nueva:* Faltan {days} días\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💡 *Tip lunar:* {tip}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━"
+        f"{phase_emoji[phase_name]} *{phase_name} en {zodiac} – {date_formatted}* {phase_emoji[phase_name]}\n\n"
+        f"✨ *Iluminación:* {illumination}%\n"
+        f"🌍 *Distancia Tierra-Luna:* ~{distance:,} km\n\n"
+        f"👉 *Dato curioso:*\n"
+        f"{science_data['curiosidad']}\n\n"
+        f"✨ *Ritual breve para hoy:*\n"
+        f"{science_data['ritual_breve']}\n\n"
+        f"*Es momento de:*\n"
     )
+
+    # Agregar recomendaciones específicas según la fase
+    if phase_name == "Luna Nueva":
+        message += "🌱 Comenzar nuevos proyectos.\n🎯 Establecer intenciones.\n💫 Planificar el futuro.\n"
+    elif phase_name == "Cuarto Creciente":
+        message += "🌱 Desarrollar y expandir.\n🎯 Tomar acción.\n💪 Construir momentum.\n"
+    elif phase_name == "Luna Llena":
+        message += "🌱 Cerrar ciclos.\n🎯 Ordenar prioridades.\n💪 Tomar decisiones con madurez.\n"
+    else:  # Cuarto Menguante
+        message += "🌱 Liberar y soltar.\n🎯 Limpiar y organizar.\n💪 Reflexionar y descansar.\n"
+
+    message += f"\n¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
+    message += f"Habla conmigo en privado: @lun_ia_my_bot"
+
     await update.message.reply_text(message, parse_mode='Markdown')
     keyboard = [
         ["/luna", "/anotar", "/logros"],
@@ -282,28 +348,46 @@ async def send_daily_moon_message(app):
     idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[idx]
     phase_data = MOON_DATA[phase_name]
+    science_data = MOON_SCIENCE_DATA[phase_name]
     days = days_until_new_moon()
-    recommendation = random.choice(phase_data["recommendations"])
-    ritual = random.choice(phase_data["rituals"])
-    quote = random.choice(phase_data["quotes"])
-    tip = random.choice(phase_data["tips"])
+    illumination = get_moon_illumination()
+    distance = get_moon_distance()
+    zodiac = get_zodiac_sign()
     now = datetime.now().strftime('%A, %-d de %B de %Y')
+    date_formatted = datetime.now().strftime('%-d %B %Y')
+
+    # Determinar emoji de fase lunar
+    phase_emoji = {
+        "Luna Nueva": "🌑",
+        "Cuarto Creciente": "🌓", 
+        "Luna Llena": "🌕",
+        "Cuarto Menguante": "🌗"
+    }
+
     message = (
-        f"✨ *LUN.IA - Mensaje Lunar Diario* ✨\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📅 *{now.capitalize()}*\n"
-        f"🌙 *Fase lunar:* {phase_name}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🔮 *Recomendación:*\n{recommendation}\n\n"
-        f"🧘 *Ritual:*\n{ritual}\n\n"
-        f"💬 *Cita del día:*\n_{quote}_\n\n"
-        f"🗓️ *Próxima Luna Nueva:* Faltan {days} días\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💡 *Tip lunar:* {tip}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
-        f"Habla conmigo en privado: [@lun_ia_my_bot](https://t.me/lun_ia_my_bot)"
+        f"{phase_emoji[phase_name]} *{phase_name} en {zodiac} – {date_formatted}* {phase_emoji[phase_name]}\n\n"
+        f"✨ *Iluminación:* {illumination}%\n"
+        f"🌍 *Distancia Tierra-Luna:* ~{distance:,} km\n\n"
+        f"👉 *Dato curioso:*\n"
+        f"{science_data['curiosidad']}\n\n"
+        f"✨ *Ritual breve para hoy:*\n"
+        f"{science_data['ritual_breve']}\n\n"
+        f"*Es momento de:*\n"
     )
+
+    # Agregar recomendaciones específicas según la fase
+    if phase_name == "Luna Nueva":
+        message += "🌱 Comenzar nuevos proyectos.\n🎯 Establecer intenciones.\n💫 Planificar el futuro.\n"
+    elif phase_name == "Cuarto Creciente":
+        message += "🌱 Desarrollar y expandir.\n🎯 Tomar acción.\n💪 Construir momentum.\n"
+    elif phase_name == "Luna Llena":
+        message += "🌱 Cerrar ciclos.\n🎯 Ordenar prioridades.\n💪 Tomar decisiones con madurez.\n"
+    else:  # Cuarto Menguante
+        message += "🌱 Liberar y soltar.\n🎯 Limpiar y organizar.\n💪 Reflexionar y descansar.\n"
+
+    message += f"\n¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
+    message += f"Habla conmigo en privado: [@lun_ia_my_bot](https://t.me/lun_ia_my_bot)"
+    
     await app.bot.send_message(chat_id=CHANNEL_CHAT_ID, text=message, parse_mode='Markdown')
 
 async def post_init(app):

@@ -1,148 +1,160 @@
-# LUN.IA Telegram Bot
+# 🌙 LUN.IA - Bot Lunar Inteligente
 
-Un bot de Telegram que te acompaña con información sobre la fase lunar actual, recomendaciones, rituales, citas y tips lunares, todo en español. Ideal para bienestar, ciencia y desarrollo personal.
+Un bot de Telegram que combina astronomía real, datos científicos y rituales prácticos para conectar tus proyectos y bienestar con la energía de la Luna.
 
-## Funcionalidades
-- Consulta la fase lunar actual en español
-- Recibe una recomendación, ritual, cita y tip aleatorio según la fase
-- Calcula los días hasta la próxima Luna Nueva
-- Todo el contenido es editable fácilmente desde una base de datos JSON
-- Registra tus notas diarias de proyecto y consulta tu historial de logros
-- Obtén meditaciones, mantras y conjuros personalizados para cada fase lunar y tema
-- Contacta con la creadora para guía personalizada
-- Los comandos principales aparecen como botones interactivos en Telegram
+## ✨ Características
 
-## Comandos principales
+### 🌕 **Mensajes Lunares Inteligentes**
+- **Datos astronómicos reales**: Iluminación lunar, distancia Tierra-Luna
+- **Información zodiacal**: Signo actual de la Luna
+- **Datos científicos curiosos**: Información educativa sobre cada fase lunar
+- **Rituales prácticos**: Instrucciones claras y accesibles
+- **Orientación específica**: Recomendaciones según la fase lunar
 
-- `/luna` – Mensaje lunar del día
-- `/anotar` – Registrar avance, idea o logro
-- `/logros` – Ver historial de notas
-- `/meditacion [tema]` – Inspiración personalizada (ej: proyectos, amor, creatividad)
-- `/mantra [tema]` – Mantra lunar
-- `/conjuro [tema]` – Conjuro lunar
-- `/contacto` – Contactar o info
-- `/intro` – Información sobre el bot
-- `/cancelar` – Cancelar anotación
-- `/lunarhoy` – Reenviar mensaje lunar del día (solo admin)
-- `/enviarluna` – Enviar mensaje lunar al canal (solo admin)
-- `/generarluna` – Generar texto lunar para revisión (solo admin)
+### 🧘 **Funcionalidades Espirituales**
+- **Meditaciones personalizadas** por tema y fase lunar
+- **Mantras específicos** para diferentes propósitos
+- **Conjuros lunares** adaptados a cada fase
+- **Sistema de anotaciones** para registrar avances y logros
+- **Historial personal** de notas y reflexiones
 
-Los comandos de administración solo pueden ser usados por la creadora (@divae).
+### 📱 **Comandos Disponibles**
+- `/luna` - Mensaje lunar del día con formato mejorado
+- `/anotar` - Registrar avance, idea o logro personal
+- `/logros` - Ver historial de notas guardadas
+- `/meditacion [tema]` - Inspiración personalizada
+- `/mantra [tema]` - Mantra lunar específico
+- `/conjuro [tema]` - Conjuro lunar personalizado
+- `/contacto` - Información de contacto
+- `/intro` - Información sobre el bot
 
-## Cómo usar los comandos de administración
+## 🚀 Instalación
 
-- **/generarluna**: Genera el texto del mensaje lunar diario y lo envía solo a la administradora en privado. Útil para revisar y modificar el mensaje antes de publicarlo.
-- **/enviarluna**: Envía el mensaje lunar diario al canal oficial (@lun_ia_oficial). Solo la administradora puede usarlo. Se recomienda usar primero /generarluna para revisar el texto.
-- **/lunarhoy**: Permite reenviar el mensaje lunar del día en privado, solo para pruebas de la administradora.
+### Prerrequisitos
+- Python 3.9+
+- Token de Telegram Bot
+- Entorno virtual (recomendado)
 
-## Flujo de publicación manual del mensaje lunar diario
+### Pasos de instalación
 
-```mermaid
-graph TD;
-    A[La administradora ejecuta /generarluna] --> B[El bot genera el texto lunar y lo envía en privado]
-    B --> C[La administradora revisa y edita el texto si lo desea]
-    C --> D[La administradora ejecuta /enviarluna]
-    D --> E[El bot publica el mensaje lunar en el canal oficial]
+1. **Clonar el repositorio**
+```bash
+git clone <repository-url>
+cd lun_IA_bot
 ```
 
-## Inicio rápido
-
-1. **Clona el repositorio**
-   ```bash
-   git clone https://github.com/divae/lun_ia.git
-   cd lunia-bot
-   ```
-
-2. **Instala las dependencias**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configura tu token de Telegram**
-   - Crea un archivo `.env` en el directorio `lunia-bot`:
-     ```
-     TELEGRAM_TOKEN=tu_token_aqui
-     ```
-   - **Nunca compartas tu token real ni subas `.env` a GitHub!**
-   - Puedes usar `.env.example` como plantilla.
-
-4. **Ejecuta el bot**
-   ```bash
-   python bot.py
-   ```
-
-5. **Pruébalo en Telegram**
-   - Abre tu bot en Telegram y envía `/luna` para recibir el mensaje lunar.
-   - Después de cada mensaje lunar, el bot te invitará a anotar tu avance, idea o logro.
-   - Usa los botones o comandos para acceder a todas las funciones.
-
-## Estructura del proyecto
-
-```
-lunia-bot/
-├── bot.py           # Código principal del bot
-├── moon_data.json   # Base de datos de recomendaciones, rituales, citas y tips
-├── rituals_db.json  # Meditaciones, mantras y conjuros por fase y tema
-├── user_notes.json  # Notas y logros de usuarios (se genera automáticamente)
-├── requirements.txt # Dependencias de Python
-├── .env             # Token secreto (¡no subir!)
-├── .env.example     # Ejemplo de archivo de entorno
-├── README.md        # Esta documentación
+2. **Crear entorno virtual**
+```bash
+python -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
 ```
 
-## Notas personales y logros
-- Tras cada mensaje lunar, el bot te invita a anotar tu avance, idea o logro.
-- Usa `/anotar` para añadir una nota en cualquier momento. Puedes cancelar con `/cancelar`.
-- Todas las notas se guardan en `user_notes.json` (privado, no compartido).
-- Usa `/logros` para ver tus últimas 10 notas, con fecha y fase lunar.
+3. **Instalar dependencias**
+```bash
+pip install -r requirements.txt
+```
 
-## Meditaciones, mantras y conjuros
-- Usa `/meditacion [tema]` para recibir una meditación adaptada a la fase lunar y tema elegido.
-- Usa `/mantra [tema]` para recibir un mantra para el día y tu tema.
-- Usa `/conjuro [tema]` para recibir un conjuro sencillo y seguro para tu intención.
-- Si no especificas tema, el bot usará uno por defecto (ej: proyectos o protección).
-- Ejemplo:
-  - `/meditacion proyectos`
-  - `/mantra amor`
-  - `/conjuro abundancia`
+4. **Configurar variables de entorno**
+```bash
+echo 'TELEGRAM_TOKEN="tu_token_aqui"' > .env
+```
 
-## Contacto
-- Usa `/contacto` para contactar con la creadora para guía personalizada, inspiración lunar o dudas.
-- Contacto vía Telegram: [@divae](https://t.me/divae)
-- **Transparencia:** Todas las recomendaciones, meditaciones y rituales combinan experiencia personal, intuición y herramientas de inteligencia artificial para ofrecerte inspiración adaptada a cada fase lunar y a tu camino personal.
+5. **Ejecutar el bot**
+```bash
+python bot.py
+```
 
-## Seguridad: Mantén tu token seguro
-- El token de Telegram debe estar en `.env` y **nunca** subirse a GitHub.
-- `.env` está incluido en `.gitignore` por defecto.
-- Comparte `.env.example` para que otros sepan qué variable necesitan.
+## 📊 Estructura del Proyecto
 
-## Personaliza el contenido
-- Edita `moon_data.json` para añadir o cambiar recomendaciones, rituales, citas y tips para cada fase lunar.
-- Edita `rituals_db.json` para añadir o cambiar meditaciones, mantras y conjuros para cada fase y tema.
-- ¡No necesitas modificar el código para actualizar el contenido!
+```
+lun_IA_bot/
+├── bot.py                 # Archivo principal del bot
+├── moon_data.json         # Base de datos de contenido lunar
+├── moon_science_data.json # Datos científicos y rituales
+├── rituals_db.json        # Base de datos de rituales
+├── user_notes.json        # Notas de usuarios (se crea automáticamente)
+├── requirements.txt       # Dependencias de Python
+├── .env                   # Variables de entorno (no incluido en git)
+└── README.md             # Este archivo
+```
 
-## Problemas comunes
-- **El bot dice `TELEGRAM_TOKEN is not set in the environment.`**
-  - Asegúrate de que `.env` existe en el directorio `lunia-bot` y está bien escrito.
-  - Ejecuta el bot desde el directorio correcto.
-- **FileNotFoundError para `moon_data.json` o `rituals_db.json`**
-  - Asegúrate de que ambos archivos están en el mismo directorio que `bot.py`.
-- **No responde en Telegram**
-  - Verifica que el bot está corriendo y el token es correcto.
+## 🔧 Tecnologías Utilizadas
 
-## FAQ
-**¿Puedo añadir más tips, meditaciones, mantras o conjuros?**  
-¡Sí! Solo edita los archivos JSON y reinicia el bot.
+- **Python 3.9+** - Lenguaje principal
+- **python-telegram-bot** - API de Telegram
+- **astral** - Cálculos astronómicos
+- **python-dotenv** - Gestión de variables de entorno
+- **JSON** - Almacenamiento de datos
 
-**¿Cómo mantengo mi token secreto?**  
-Nunca compartas tu `.env`. Usa `.env.example` para documentar.
+## 🌟 Características Técnicas
 
-**¿Puedo ejecutarlo en un servidor?**  
-Sí, solo asegúrate de tener Python, las dependencias y el `.env`.
+### **Cálculos Astronómicos**
+- Fase lunar en tiempo real
+- Porcentaje de iluminación
+- Distancia Tierra-Luna aproximada
+- Horarios de salida de la luna para Madrid y Buenos Aires
 
-## Contribuir
-- Haz fork del repo y envía un pull request.
-- ¡Sugerencias, bugs y mejoras son bienvenidas!
+### **Sistema de Datos**
+- Base de datos JSON para contenido lunar
+- Datos científicos específicos por fase
+- Rituales prácticos y accesibles
+- Sistema de anotaciones por usuario
 
-## Licencia
-MIT 
+### **Funcionalidades Avanzadas**
+- Comandos administrativos para gestión de contenido
+- Envío automático de mensajes al canal oficial
+- Sistema de conversación para anotaciones
+- Teclado personalizado con comandos rápidos
+
+## 📈 Roadmap
+
+### **Próximas Funcionalidades**
+- [ ] Integración con APIs de LLM para contenido dinámico
+- [ ] Predicciones astrológicas más precisas
+- [ ] Sistema de recordatorios personalizados
+- [ ] Análisis de patrones en las anotaciones
+- [ ] Integración con calendarios personales
+
+### **Mejoras Técnicas**
+- [ ] Base de datos SQL para mejor rendimiento
+- [ ] API REST para integraciones externas
+- [ ] Sistema de caché para cálculos astronómicos
+- [ ] Logs estructurados para monitoreo
+
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'feat: add amazing feature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+### **Convenciones de Commits**
+Seguimos [Conventional Commits](https://carlosazaustre.es/conventional-commits):
+- `feat:` nuevas funcionalidades
+- `fix:` correcciones de bugs
+- `docs:` cambios en documentación
+- `style:` cambios de formato
+- `refactor:` refactorización de código
+- `test:` agregar o modificar tests
+- `chore:` cambios en build o herramientas
+
+## 📞 Contacto
+
+- **Desarrollador**: @divae
+- **Canal oficial**: @lun_ia_oficial
+- **Bot**: @lun_ia_my_bot
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## 🙏 Agradecimientos
+
+- Comunidad de usuarios que inspiran nuevas funcionalidades
+- Librerías de código abierto que hacen posible este proyecto
+- La Luna por ser nuestra inspiración constante
+
+---
+
+**¿List@ para conectar tus proyectos y tu bienestar con la energía de la Luna?** 🌕✨ 
