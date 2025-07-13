@@ -33,6 +33,8 @@ with open("moon_data.json", encoding="utf-8") as f:
     MOON_DATA = json.load(f)
 with open("moon_science_data.json", encoding="utf-8") as f:
     MOON_SCIENCE_DATA = json.load(f)
+with open("rituals_db.json", encoding="utf-8") as f:
+    RITUALS_DATA = json.load(f)
 
 NOTE = 1
 ADMIN_USERNAMES = ["divae", "EstelaYoMisma"]
@@ -168,6 +170,69 @@ def show_logros(update, context):
         msg += f"{n['date']} ({n['phase']}): {n['note']}\n\n"
     update.message.reply_text(msg, parse_mode='Markdown')
 
+def get_mantra(update, context):
+    if not context.args:
+        update.message.reply_text("Uso: /mantra [tema]\nTemas disponibles: proyectos, amor, creatividad, abundancia, proteccion, limpieza")
+        return
+    
+    theme = context.args[0].lower()
+    phase_idx = get_moon_phase()
+    phase_name = MOON_PHASE_NAMES[phase_idx]
+    
+    try:
+        mantras = RITUALS_DATA[phase_name]["mantras"]
+        if theme in mantras:
+            mantra = random.choice(mantras[theme])
+            message = f"🧘‍♀️ *Mantra para {theme} en {phase_name}:*\n\n{mantra}\n\n💫 Repítelo 3 veces al día para potenciar su efecto."
+            update.message.reply_text(message, parse_mode='Markdown')
+        else:
+            available_themes = ", ".join(mantras.keys())
+            update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
+    except KeyError:
+        update.message.reply_text(f"No hay mantras disponibles para {phase_name}.")
+
+def get_meditacion(update, context):
+    if not context.args:
+        update.message.reply_text("Uso: /meditacion [tema]\nTemas disponibles: proyectos, amor, creatividad, abundancia, proteccion, limpieza")
+        return
+    
+    theme = context.args[0].lower()
+    phase_idx = get_moon_phase()
+    phase_name = MOON_PHASE_NAMES[phase_idx]
+    
+    try:
+        meditaciones = RITUALS_DATA[phase_name]["meditaciones"]
+        if theme in meditaciones:
+            meditacion = random.choice(meditaciones[theme])
+            message = f"🧘‍♀️ *Meditación para {theme} en {phase_name}:*\n\n{meditacion}\n\n✨ Dedica 5-10 minutos a esta práctica."
+            update.message.reply_text(message, parse_mode='Markdown')
+        else:
+            available_themes = ", ".join(meditaciones.keys())
+            update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
+    except KeyError:
+        update.message.reply_text(f"No hay meditaciones disponibles para {phase_name}.")
+
+def get_conjuro(update, context):
+    if not context.args:
+        update.message.reply_text("Uso: /conjuro [tema]\nTemas disponibles: proteccion, abundancia, amor, creatividad, limpieza")
+        return
+    
+    theme = context.args[0].lower()
+    phase_idx = get_moon_phase()
+    phase_name = MOON_PHASE_NAMES[phase_idx]
+    
+    try:
+        conjuros = RITUALS_DATA[phase_name]["conjuros"]
+        if theme in conjuros:
+            conjuro = random.choice(conjuros[theme])
+            message = f"🔮 *Conjuro para {theme} en {phase_name}:*\n\n{conjuro}\n\n🌟 Realiza este ritual con intención y fe."
+            update.message.reply_text(message, parse_mode='Markdown')
+        else:
+            available_themes = ", ".join(conjuros.keys())
+            update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
+    except KeyError:
+        update.message.reply_text(f"No hay conjuros disponibles para {phase_name}.")
+
 def contacto(update, context):
     update.message.reply_text("Puedes contactarme en Telegram: @divae\nGracias por usar LUN.IA 🌙")
 
@@ -184,6 +249,9 @@ def main():
     dp.add_handler(CommandHandler('start', start))
     dp.add_handler(CommandHandler('intro', intro))
     dp.add_handler(CommandHandler('luna', moon))
+    dp.add_handler(CommandHandler('mantra', get_mantra))
+    dp.add_handler(CommandHandler('meditacion', get_meditacion))
+    dp.add_handler(CommandHandler('conjuro', get_conjuro))
     dp.add_handler(note_conv_handler)
     dp.add_handler(CommandHandler('logros', show_logros))
     dp.add_handler(CommandHandler('contacto', contacto))
