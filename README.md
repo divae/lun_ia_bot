@@ -22,11 +22,19 @@ Un bot de Telegram que combina astronomía real, datos científicos y rituales p
 - `/luna` - Mensaje lunar del día con formato mejorado
 - `/anotar` - Registrar avance, idea o logro personal
 - `/logros` - Ver historial de notas guardadas
-- `/meditacion [tema]` - Inspiración personalizada
-- `/mantra [tema]` - Mantra lunar específico
-- `/conjuro [tema]` - Conjuro lunar personalizado
+- `/meditacion [tema]` - Meditación personalizada por fase lunar
+- `/mantra [tema]` - Mantra específico para diferentes propósitos
+- `/conjuro [tema]` - Ritual/conjuro lunar personalizado
 - `/contacto` - Información de contacto
 - `/intro` - Información sobre el bot
+
+### 🎯 **Temas Disponibles**
+- **proyectos** - Para desarrollo personal y profesional
+- **amor** - Para relaciones y conexiones
+- **creatividad** - Para inspiración y expresión artística
+- **abundancia** - Para prosperidad y abundancia
+- **proteccion** - Para protección y seguridad
+- **limpieza** - Para limpieza energética y renovación
 
 ## 🚀 Instalación
 
@@ -102,10 +110,12 @@ lun_IA_bot/
 - Sistema de anotaciones por usuario
 
 ### **Funcionalidades Avanzadas**
+- Sistema robusto de manejo de errores
+- Logging detallado para monitoreo
+- Validación de archivos JSON y configuración
+- Sistema de conversación para anotaciones
 - Comandos administrativos para gestión de contenido
 - Envío automático de mensajes al canal oficial
-- Sistema de conversación para anotaciones
-- Teclado personalizado con comandos rápidos
 
 ## 📈 Roadmap
 

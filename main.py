@@ -3,6 +3,8 @@ import json
 import math
 import random
 import locale
+import logging
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, BotCommand
@@ -13,9 +15,20 @@ from telegram.ext import Filters
 from astral import LocationInfo
 from astral.moon import moonrise, phase
 
+# Configurar logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 # Cargar token
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_TOKEN')
+
+if not TOKEN:
+    logger.error("No se encontró el token de Telegram. Asegúrate de tener config.env con TELEGRAM_TOKEN")
+    sys.exit(1)
 
 # Constantes y datos
 MOON_CYCLE_DAYS = 30
@@ -29,12 +42,19 @@ try:
 except locale.Error:
     pass
 
-with open("moon_data.json", encoding="utf-8") as f:
-    MOON_DATA = json.load(f)
-with open("moon_science_data.json", encoding="utf-8") as f:
-    MOON_SCIENCE_DATA = json.load(f)
-with open("rituals_db.json", encoding="utf-8") as f:
-    RITUALS_DATA = json.load(f)
+try:
+    with open("moon_data.json", encoding="utf-8") as f:
+        MOON_DATA = json.load(f)
+    with open("moon_science_data.json", encoding="utf-8") as f:
+        MOON_SCIENCE_DATA = json.load(f)
+    with open("rituals_db.json", encoding="utf-8") as f:
+        RITUALS_DATA = json.load(f)
+except FileNotFoundError as e:
+    logger.error(f"Archivo JSON no encontrado: {e}")
+    sys.exit(1)
+except json.JSONDecodeError as e:
+    logger.error(f"Error al decodificar JSON: {e}")
+    sys.exit(1)
 
 NOTE = 1
 ADMIN_USERNAMES = ["divae", "EstelaYoMisma"]
@@ -102,30 +122,34 @@ def intro(update, context):
     update.message.reply_text(msg)
 
 def moon(update, context):
-    idx = get_moon_phase()
-    phase_name = MOON_PHASE_NAMES[idx]
-    science_data = MOON_SCIENCE_DATA[phase_name]
-    illumination = get_moon_illumination()
-    distance = get_moon_distance()
-    zodiac = get_zodiac_sign()
-    date_str = datetime.now().strftime('%-d %B %Y')
+    try:
+        idx = get_moon_phase()
+        phase_name = MOON_PHASE_NAMES[idx]
+        science_data = MOON_SCIENCE_DATA[phase_name]
+        illumination = get_moon_illumination()
+        distance = get_moon_distance()
+        zodiac = get_zodiac_sign()
+        date_str = datetime.now().strftime('%-d %B %Y')
 
-    phase_emoji = {"Luna Nueva": "🌑", "Cuarto Creciente": "🌔", "Luna Llena": "🌕", "Cuarto Menguante": "🌗"}
+        phase_emoji = {"Luna Nueva": "🌑", "Cuarto Creciente": "🌔", "Luna Llena": "🌕", "Cuarto Menguante": "🌗"}
 
-    message = (
-        f"{phase_emoji[phase_name]} {phase_name} en {zodiac} – {date_str} {phase_emoji[phase_name]}\n\n"
-        f"✨ Iluminación: {illumination}%\n"
-        f"🌍 Distancia Tierra-Luna: ~{distance:,} km\n\n"
-        f"👉 Dato curioso:\n"
-        f"{science_data['curiosidad']}\n\n"
-        f"✨ Ritual breve para hoy:\n"
-        f"{science_data['ritual_breve']}\n\n"
-        f"Es momento de:\n"
-        f"{science_data['momentos_propicios']}\n\n"
-        f"¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
-        f"Habla conmigo en privado: @lun_ia_my_bot"
-    )
-    update.message.reply_text(message)
+        message = (
+            f"{phase_emoji[phase_name]} {phase_name} en {zodiac} – {date_str} {phase_emoji[phase_name]}\n\n"
+            f"✨ Iluminación: {illumination}%\n"
+            f"🌍 Distancia Tierra-Luna: ~{distance:,} km\n\n"
+            f"👉 Dato curioso:\n"
+            f"{science_data['curiosidad']}\n\n"
+            f"✨ Ritual breve para hoy:\n"
+            f"{science_data['ritual_breve']}\n\n"
+            f"Es momento de:\n"
+            f"{science_data['momentos_propicios']}\n\n"
+            f"¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
+            f"Habla conmigo en privado: @lun_ia_my_bot"
+        )
+        update.message.reply_text(message)
+    except Exception as e:
+        logger.error(f"Error en función moon: {e}")
+        update.message.reply_text("❌ Error al obtener información lunar. Intenta de nuevo.")
 
 def ask_note(update, context):
     update.message.reply_text("¿Qué quieres anotar hoy? Escribe tu avance. Usa /cancelar para cancelar.")
@@ -236,28 +260,43 @@ def get_conjuro(update, context):
 def contacto(update, context):
     update.message.reply_text("Puedes contactarme en Telegram: @divae\nGracias por usar LUN.IA 🌙")
 
+def error_handler(update, context):
+    logger.error(f"Error en el bot: {context.error}")
+    if update and update.effective_message:
+        update.effective_message.reply_text("❌ Ocurrió un error. Por favor, intenta de nuevo más tarde.")
+
 def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+    try:
+        logger.info("Iniciando bot LUN.IA...")
+        updater = Updater(TOKEN, use_context=True)
+        dp = updater.dispatcher
 
-    note_conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('anotar', ask_note)],
-        states={NOTE: [MessageHandler(Filters.text & ~Filters.command, save_note)]},
-        fallbacks=[CommandHandler('cancelar', cancel_note)]
-    )
+        # Agregar manejador de errores
+        dp.add_error_handler(error_handler)
 
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CommandHandler('intro', intro))
-    dp.add_handler(CommandHandler('luna', moon))
-    dp.add_handler(CommandHandler('mantra', get_mantra))
-    dp.add_handler(CommandHandler('meditacion', get_meditacion))
-    dp.add_handler(CommandHandler('conjuro', get_conjuro))
-    dp.add_handler(note_conv_handler)
-    dp.add_handler(CommandHandler('logros', show_logros))
-    dp.add_handler(CommandHandler('contacto', contacto))
+        note_conv_handler = ConversationHandler(
+            entry_points=[CommandHandler('anotar', ask_note)],
+            states={NOTE: [MessageHandler(Filters.text & ~Filters.command, save_note)]},
+            fallbacks=[CommandHandler('cancelar', cancel_note)]
+        )
 
-    updater.start_polling()
-    updater.idle()
+        dp.add_handler(CommandHandler('start', start))
+        dp.add_handler(CommandHandler('intro', intro))
+        dp.add_handler(CommandHandler('luna', moon))
+        dp.add_handler(CommandHandler('mantra', get_mantra))
+        dp.add_handler(CommandHandler('meditacion', get_meditacion))
+        dp.add_handler(CommandHandler('conjuro', get_conjuro))
+        dp.add_handler(note_conv_handler)
+        dp.add_handler(CommandHandler('logros', show_logros))
+        dp.add_handler(CommandHandler('contacto', contacto))
+
+        logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
+        updater.start_polling()
+        updater.idle()
+        
+    except Exception as e:
+        logger.error(f"Error al iniciar el bot: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
