@@ -1,15 +1,14 @@
 import os
 from dotenv import load_dotenv
-from telegram.ext import CommandHandler
+from telegram.ext import CommandHandler, Updater
 from datetime import datetime
 import random
 import json
-from telegram.ext import ApplicationBuilder
 import locale
 from astral import LocationInfo
 from astral.moon import moonrise, phase
 from astral.sun import sun
-from telegram.ext import ConversationHandler, MessageHandler, filters
+from telegram.ext import ConversationHandler, MessageHandler, Filters
 from telegram import BotCommand, ReplyKeyboardMarkup
 import math
 
@@ -131,7 +130,7 @@ COMMANDS_REMINDER = (
     "/contacto – Contactar o info\n"
 )
 
-async def moon(update, context):
+def moon(update, context):
     """Send the current day in Spanish, the lunar message, and moonrise times for Madrid and Buenos Aires."""
     idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[idx]
@@ -191,22 +190,18 @@ async def moon(update, context):
     message += f"\n¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
     message += f"Habla conmigo en privado: @lun_ia_my_bot"
 
-    await update.message.reply_text(message, parse_mode='Markdown')
+    update.message.reply_text(message, parse_mode='Markdown')
     keyboard = [
         ["/luna", "/anotar", "/logros"],
         ["/meditacion", "/mantra", "/conjuro"],
         ["/contacto"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text(
-        "¿Te gustaría anotar algo sobre tu proyecto hoy? Usa /anotar para registrar tu avance, idea o logro.",
-        reply_markup=reply_markup
-    )
 
-async def start(update, context):
-    await update.message.reply_text("¡Bienvenid@! Usa /luna para ver el mensaje lunar de hoy, /intro para más información sobre el bot, y únete al canal oficial: @lun_ia_oficial")
+def start(update, context):
+    update.message.reply_text("¡Bienvenid@! Usa /luna para ver el mensaje lunar de hoy, /intro para más información sobre el bot, y únete al canal oficial: @lun_ia_oficial")
 
-async def intro(update, context):
+def intro(update, context):
     msg = (
         "🌙 ¡Bienvenid@ a LUN.IA!\n\n"
         "Aquí puedes recibir inspiración lunar diaria, recomendaciones, rituales, mantras, meditaciones y tips para tus proyectos y bienestar.\n\n"
@@ -221,16 +216,16 @@ async def intro(update, context):
         "¿List@ para conectar tus proyectos y tu bienestar con la energía de la Luna? 🌕\n\n"
         "¡Escribe /luna para comenzar!"
     )
-    await update.message.reply_text(msg)
+    update.message.reply_text(msg)
 
 NOTE, = range(1)
 
-async def ask_note(update, context):
-    await update.message.reply_text(
+def ask_note(update, context):
+    update.message.reply_text(
         "¿Te gustaría anotar algo sobre tu proyecto hoy? Escribe tu avance, bloqueo, idea o logro y lo guardaré para ti.\n\nSi no quieres anotar nada, escribe /cancelar.")
     return NOTE
 
-async def save_note(update, context):
+def save_note(update, context):
     user_id = str(update.effective_user.id)
     note_text = update.message.text
     now = datetime.now()
@@ -252,14 +247,14 @@ async def save_note(update, context):
     notes[user_id].append(note_entry)
     with open("user_notes.json", "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=2)
-    await update.message.reply_text("¡Nota guardada! Puedes ver tu historial con /logros.")
+    update.message.reply_text("¡Nota guardada! Puedes ver tu historial con /logros.")
     return ConversationHandler.END
 
-async def cancel_note(update, context):
-    await update.message.reply_text("Anotación cancelada.")
+def cancel_note(update, context):
+    update.message.reply_text("Anotación cancelada.")
     return ConversationHandler.END
 
-async def show_logros(update, context):
+def show_logros(update, context):
     user_id = str(update.effective_user.id)
     try:
         with open("user_notes.json", "r", encoding="utf-8") as f:
@@ -268,14 +263,14 @@ async def show_logros(update, context):
         notes = {}
     user_notes = notes.get(user_id, [])
     if not user_notes:
-        await update.message.reply_text("Aún no tienes logros ni notas guardadas. Usa /anotar para registrar tu avance.")
+        update.message.reply_text("Aún no tienes logros ni notas guardadas. Usa /anotar para registrar tu avance.")
         return
     msg = "📒 *Tu historial de notas y logros:*\n\n"
     for n in user_notes[-10:][::-1]:
         msg += f"{n['date']} ({n['phase']}):\n{n['note']}\n\n"
-    await update.message.reply_text(msg, parse_mode='Markdown')
+    update.message.reply_text(msg, parse_mode='Markdown')
 
-async def meditacion(update, context):
+def meditacion(update, context):
     args = context.args
     tema = args[0].lower() if args else 'proyectos'
     phase_idx = get_moon_phase()
@@ -288,11 +283,11 @@ async def meditacion(update, context):
         meditaciones = []
     if meditaciones:
         texto = random.choice(meditaciones)
-        await update.message.reply_text(f"🧘 Meditación para {tema} en {phase_name}:\n\n{texto}")
+        update.message.reply_text(f"🧘 Meditación para {tema} en {phase_name}:\n\n{texto}")
     else:
-        await update.message.reply_text(f"No hay meditaciones para el tema '{tema}' en {phase_name}.")
+        update.message.reply_text(f"No hay meditaciones para el tema '{tema}' en {phase_name}.")
 
-async def mantra(update, context):
+def mantra(update, context):
     args = context.args
     tema = args[0].lower() if args else 'proyectos'
     phase_idx = get_moon_phase()
@@ -305,11 +300,11 @@ async def mantra(update, context):
         mantras = []
     if mantras:
         texto = random.choice(mantras)
-        await update.message.reply_text(f"🧘 Mantra para {tema} en {phase_name}:\n\n{texto}")
+        update.message.reply_text(f"🧘 Mantra para {tema} en {phase_name}:\n\n{texto}")
     else:
-        await update.message.reply_text(f"No hay mantras para el tema '{tema}' en {phase_name}.")
+        update.message.reply_text(f"No hay mantras para el tema '{tema}' en {phase_name}.")
 
-async def conjuro(update, context):
+def conjuro(update, context):
     args = context.args
     tema = args[0].lower() if args else 'proteccion'
     phase_idx = get_moon_phase()
@@ -322,29 +317,29 @@ async def conjuro(update, context):
         conjuros = []
     if conjuros:
         texto = random.choice(conjuros)
-        await update.message.reply_text(f"✨ Conjuro para {tema} en {phase_name}:\n\n{texto}")
+        update.message.reply_text(f"✨ Conjuro para {tema} en {phase_name}:\n\n{texto}")
     else:
-        await update.message.reply_text(f"No hay conjuros para el tema '{tema}' en {phase_name}.")
+        update.message.reply_text(f"No hay conjuros para el tema '{tema}' en {phase_name}.")
 
-async def contacto(update, context):
+def contacto(update, context):
     msg = (
         "Puedes contactarme directamente en Telegram: @divae\n\n"
         "Transparencia: este bot utiliza IA y experiencia personal para inspirar y acompañar proyectos y bienestar.\n"
     )
-    await update.message.reply_text(msg)
+    update.message.reply_text(msg)
 
 # Conversation handler para anotar
 note_conv_handler = ConversationHandler(
     entry_points=[CommandHandler('anotar', ask_note)],
     states={
-        NOTE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_note)]
+        NOTE: [MessageHandler(Filters.TEXT & ~Filters.COMMAND, save_note)]
     },
     fallbacks=[CommandHandler('cancelar', cancel_note)]
 )
 
 CHANNEL_CHAT_ID = '@lun_ia_oficial'
 
-async def send_daily_moon_message(app):
+def send_daily_moon_message(bot):
     idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[idx]
     phase_data = MOON_DATA[phase_name]
@@ -388,9 +383,9 @@ async def send_daily_moon_message(app):
     message += f"\n¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
     message += f"Habla conmigo en privado: [@lun_ia_my_bot](https://t.me/lun_ia_my_bot)"
     
-    await app.bot.send_message(chat_id=CHANNEL_CHAT_ID, text=message, parse_mode='Markdown')
+    bot.send_message(chat_id=CHANNEL_CHAT_ID, text=message, parse_mode='Markdown')
 
-async def post_init(app):
+def post_init(bot):
     commands = [
         BotCommand('luna', 'Mensaje lunar del día'),
         BotCommand('lunarhoy', 'Reenviar mensaje lunar de hoy'),
@@ -403,20 +398,20 @@ async def post_init(app):
         BotCommand('intro', 'Información sobre el bot'),
         BotCommand('cancelar', 'Cancelar anotación')
     ]
-    await app.bot.set_my_commands(commands)
+    bot.set_my_commands(commands)
 
 # Nuevo comando para enviar el mensaje lunar diario manualmente al canal, solo para la administradora
 ADMIN_USERNAMES = ["divae", "EstelaYoMisma"]
-async def enviarluna(update, context):
+def enviarluna(update, context):
     if update.effective_user.username not in ADMIN_USERNAMES:
-        await update.message.reply_text("⛔ Este comando solo está disponible para la administradora.")
+        update.message.reply_text("⛔ Este comando solo está disponible para la administradora.")
         return
-    await send_daily_moon_message(context.application)
-    await update.message.reply_text("✅ Mensaje lunar enviado al canal.")
+    send_daily_moon_message(context.bot)
+    update.message.reply_text("✅ Mensaje lunar enviado al canal.")
 
-async def generarluna(update, context):
+def generarluna(update, context):
     if update.effective_user.username not in ADMIN_USERNAMES:
-        await update.message.reply_text("⛔ Este comando solo está disponible para la administradora.")
+        update.message.reply_text("⛔ Este comando solo está disponible para la administradora.")
         return
     idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[idx]
@@ -443,31 +438,33 @@ async def generarluna(update, context):
         f"¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
         f"Habla conmigo en privado: [@lun_ia_my_bot](https://t.me/lun_ia_my_bot)"
     )
-    await update.message.reply_text(message, parse_mode='Markdown')
+    update.message.reply_text(message, parse_mode='Markdown')
 
-async def lunarhoy(update, context):
+def lunarhoy(update, context):
     if update.effective_user.username not in ADMIN_USERNAMES:
-        await update.message.reply_text("⛔ Este comando solo está disponible para la administradora.")
+        update.message.reply_text("⛔ Este comando solo está disponible para la administradora.")
         return
-    await moon(update, context)
+    moon(update, context)
 
 def main():
     if not TOKEN:
         raise ValueError("TELEGRAM_TOKEN is not set in the environment.")
-    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
-    app.add_handler(CommandHandler('start', start))
-    app.add_handler(CommandHandler('luna', moon))
-    app.add_handler(CommandHandler('lunarhoy', lunarhoy))
-    app.add_handler(CommandHandler('logros', show_logros))
-    app.add_handler(note_conv_handler)
-    app.add_handler(CommandHandler('meditacion', meditacion))
-    app.add_handler(CommandHandler('mantra', mantra))
-    app.add_handler(CommandHandler('conjuro', conjuro))
-    app.add_handler(CommandHandler('contacto', contacto))
-    app.add_handler(CommandHandler('intro', intro))
-    app.add_handler(CommandHandler('enviarluna', enviarluna))
-    app.add_handler(CommandHandler('generarluna', generarluna))
-    app.run_polling()
+    app = Updater(TOKEN, post_init=post_init)
+    dp = app.dispatcher
+    dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(CommandHandler('luna', moon))
+    dp.add_handler(CommandHandler('lunarhoy', lunarhoy))
+    dp.add_handler(CommandHandler('logros', show_logros))
+    dp.add_handler(note_conv_handler)
+    dp.add_handler(CommandHandler('meditacion', meditacion))
+    dp.add_handler(CommandHandler('mantra', mantra))
+    dp.add_handler(CommandHandler('conjuro', conjuro))
+    dp.add_handler(CommandHandler('contacto', contacto))
+    dp.add_handler(CommandHandler('intro', intro))
+    dp.add_handler(CommandHandler('enviarluna', enviarluna))
+    dp.add_handler(CommandHandler('generarluna', generarluna))
+    app.start_polling()
+    app.idle()
 
 if __name__ == "__main__":
     main() 
