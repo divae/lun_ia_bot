@@ -108,31 +108,22 @@ def moon(update, context):
     zodiac = get_zodiac_sign()
     date_str = datetime.now().strftime('%-d %B %Y')
 
-    madrid = LocationInfo("Madrid", "Spain", "Europe/Madrid", 40.4168, -3.7038)
-    buenos_aires = LocationInfo("Buenos Aires", "Argentina", "America/Argentina/Buenos_Aires", -34.61, -58.38)
-    today = datetime.now().date()
-    try:
-        moonrise_madrid = moonrise(madrid.observer, date=today)
-        moonrise_madrid_str = moonrise_madrid.strftime('%H:%M') if moonrise_madrid else "No visible"
-    except Exception:
-        moonrise_madrid_str = "No visible"
-    try:
-        moonrise_ba = moonrise(buenos_aires.observer, date=today)
-        moonrise_ba_str = moonrise_ba.strftime('%H:%M') if moonrise_ba else "No visible"
-    except Exception:
-        moonrise_ba_str = "No visible"
-
-    phase_emoji = {"Luna Nueva": "🌑", "Cuarto Creciente": "🌓", "Luna Llena": "🌕", "Cuarto Menguante": "🌗"}
+    phase_emoji = {"Luna Nueva": "🌑", "Cuarto Creciente": "🌔", "Luna Llena": "🌕", "Cuarto Menguante": "🌗"}
 
     message = (
-        f"{phase_emoji[phase_name]} *{phase_name} en {zodiac} – {date_str}* {phase_emoji[phase_name]}\n\n"
-        f"✨ *Iluminación:* {illumination}%\n"
-        f"🌍 *Distancia Tierra-Luna:* ~{distance:,} km\n"
-        f"🌙 Madrid: {moonrise_madrid_str} | Buenos Aires: {moonrise_ba_str}\n\n"
-        f"👉 *Dato curioso:* {science_data['curiosidad']}\n"
-        f"✨ *Ritual breve:* {science_data['ritual_breve']}\n"
+        f"{phase_emoji[phase_name]} {phase_name} en {zodiac} – {date_str} {phase_emoji[phase_name]}\n\n"
+        f"✨ Iluminación: {illumination}%\n"
+        f"🌍 Distancia Tierra-Luna: ~{distance:,} km\n\n"
+        f"👉 Dato curioso:\n"
+        f"{science_data['curiosidad']}\n\n"
+        f"✨ Ritual breve para hoy:\n"
+        f"{science_data['ritual_breve']}\n\n"
+        f"Es momento de:\n"
+        f"{science_data['momentos_propicios']}\n\n"
+        f"¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
+        f"Habla conmigo en privado: @lun_ia_my_bot"
     )
-    update.message.reply_text(message, parse_mode='Markdown')
+    update.message.reply_text(message)
 
 def ask_note(update, context):
     update.message.reply_text("¿Qué quieres anotar hoy? Escribe tu avance. Usa /cancelar para cancelar.")
