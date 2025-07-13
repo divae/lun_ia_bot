@@ -61,14 +61,14 @@ echo 'TELEGRAM_TOKEN="tu_token_aqui"' > .env
 
 5. **Ejecutar el bot**
 ```bash
-python bot.py
+python main.py
 ```
 
 ## 📊 Estructura del Proyecto
 
 ```
 lun_IA_bot/
-├── bot.py                 # Archivo principal del bot
+├── main.py                # Archivo principal del bot
 ├── moon_data.json         # Base de datos de contenido lunar
 ├── moon_science_data.json # Datos científicos y rituales
 ├── rituals_db.json        # Base de datos de rituales
