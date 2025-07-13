@@ -61,22 +61,49 @@ ADMIN_USERNAMES = ["divae", "EstelaYoMisma"]
 CHANNEL_CHAT_ID = '@lun_ia_oficial'
 
 def get_moon_phase():
-    now = datetime.now()
-    r = (now.year % 100) % 19
-    if r > 9:
-        r -= 19
-    phase_calc = ((r * 11) % MOON_CYCLE_DAYS) + now.month + now.day
-    if now.month < 3:
-        phase_calc += 2
-    phase_calc -= 8.3
-    phase_calc = int(phase_calc + 0.5) % MOON_CYCLE_DAYS
-    if phase_calc < NEW_MOON_THRESHOLD:
-        return 0
-    if phase_calc < FIRST_QUARTER_THRESHOLD:
-        return 1
-    if phase_calc < FULL_MOON_THRESHOLD:
-        return 2
-    return 3
+    try:
+        # Usar la librería astral para un cálculo más preciso
+        moon_phase_value = phase(datetime.now())
+        
+        # Convertir el valor de fase (0-1) a índice de fase lunar
+        # 0 = Luna Nueva, 0.25 = Cuarto Creciente, 0.5 = Luna Llena, 0.75 = Cuarto Menguante
+        if moon_phase_value < 0.0625:  # 0-6.25%
+            return 0  # Luna Nueva
+        elif moon_phase_value < 0.1875:  # 6.25-18.75%
+            return 1  # Cuarto Creciente
+        elif moon_phase_value < 0.3125:  # 18.75-31.25%
+            return 1  # Cuarto Creciente
+        elif moon_phase_value < 0.4375:  # 31.25-43.75%
+            return 2  # Luna Llena
+        elif moon_phase_value < 0.5625:  # 43.75-56.25%
+            return 2  # Luna Llena
+        elif moon_phase_value < 0.6875:  # 56.25-68.75%
+            return 2  # Luna Llena
+        elif moon_phase_value < 0.8125:  # 68.75-81.25%
+            return 3  # Cuarto Menguante
+        elif moon_phase_value < 0.9375:  # 81.25-93.75%
+            return 3  # Cuarto Menguante
+        else:  # 93.75-100%
+            return 0  # Luna Nueva
+    except Exception as e:
+        logger.error(f"Error calculando fase lunar: {e}")
+        # Fallback al algoritmo anterior en caso de error
+        now = datetime.now()
+        r = (now.year % 100) % 19
+        if r > 9:
+            r -= 19
+        phase_calc = ((r * 11) % MOON_CYCLE_DAYS) + now.month + now.day
+        if now.month < 3:
+            phase_calc += 2
+        phase_calc -= 8.3
+        phase_calc = int(phase_calc + 0.5) % MOON_CYCLE_DAYS
+        if phase_calc < NEW_MOON_THRESHOLD:
+            return 0
+        if phase_calc < FIRST_QUARTER_THRESHOLD:
+            return 1
+        if phase_calc < FULL_MOON_THRESHOLD:
+            return 2
+        return 3
 
 def get_moon_illumination():
     moon_phase_value = phase(datetime.now())
@@ -161,6 +188,11 @@ def save_note(update, context):
     phase_idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[phase_idx]
     now = datetime.now().strftime('%Y-%m-%d')
+    
+    # Debug: mostrar la fase calculada
+    moon_phase_value = phase(datetime.now())
+    logger.info(f"Fase lunar calculada: {moon_phase_value:.3f} -> {phase_name} (índice: {phase_idx})")
+    
     note_entry = {"date": now, "phase": phase_name, "note": note_text}
 
     try:
@@ -171,7 +203,7 @@ def save_note(update, context):
     notes.setdefault(user_id, []).append(note_entry)
     with open("user_notes.json", "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=2)
-    update.message.reply_text("✅ Nota guardada. Usa /logros para ver tu historial.")
+    update.message.reply_text(f"✅ Nota guardada en {phase_name}. Usa /logros para ver tu historial.")
     return ConversationHandler.END
 
 def cancel_note(update, context):
