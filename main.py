@@ -176,7 +176,10 @@ def moon(update, context):
         update.message.reply_text(message)
     except Exception as e:
         logger.error(f"Error en función moon: {e}")
-        update.message.reply_text("❌ Error al obtener información lunar. Intenta de nuevo.")
+        try:
+            update.message.reply_text("❌ Error al obtener información lunar. Intenta de nuevo.")
+        except:
+            logger.error("No se pudo enviar mensaje de error al usuario")
 
 def ask_note(update, context):
     update.message.reply_text("¿Qué quieres anotar hoy? Escribe tu avance. Usa /cancelar para cancelar.")
@@ -323,8 +326,18 @@ def main():
         dp.add_handler(CommandHandler('contacto', contacto))
 
         logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
-        updater.start_polling()
-        updater.idle()
+        
+        # Configurar polling con reintentos y manejo de errores de red
+        while True:
+            try:
+                updater.start_polling(timeout=30)
+                updater.idle()
+            except Exception as e:
+                logger.error(f"Error de conexión: {e}")
+                logger.info("Reintentando en 10 segundos...")
+                import time
+                time.sleep(10)
+                continue
         
     except Exception as e:
         logger.error(f"Error al iniciar el bot: {e}")
