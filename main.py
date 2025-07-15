@@ -5,6 +5,7 @@ import random
 import locale
 import logging
 import sys
+import fcntl
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, BotCommand
@@ -300,48 +301,69 @@ def error_handler(update, context):
     if update and update.effective_message:
         update.effective_message.reply_text("❌ Ocurrió un error. Por favor, intenta de nuevo más tarde.")
 
-def main():
+def create_bot():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    # Agregar manejador de errores
+    dp.add_error_handler(error_handler)
+
+    note_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('anotar', ask_note)],
+        states={NOTE: [MessageHandler(Filters.text & ~Filters.command, save_note)]},
+        fallbacks=[CommandHandler('cancelar', cancel_note)]
+    )
+
+    dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(CommandHandler('intro', intro))
+    dp.add_handler(CommandHandler('luna', moon))
+    dp.add_handler(CommandHandler('mantra', get_mantra))
+    dp.add_handler(CommandHandler('meditacion', get_meditacion))
+    dp.add_handler(CommandHandler('conjuro', get_conjuro))
+    dp.add_handler(note_conv_handler)
+    dp.add_handler(CommandHandler('logros', show_logros))
+    dp.add_handler(CommandHandler('contacto', contacto))
+
+    return updater
+
+def acquire_lock(lock_file):
     try:
+        f = open(lock_file, 'w')
+        try:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            logger.info("Bloqueo adquirido - iniciando bot único")
+            return f
+        except IOError:
+            logger.error("Ya hay una instancia del bot ejecutándose. Deteniendo.")
+            sys.exit(1)
+    except Exception as e:
+        logger.error(f"Error al crear archivo de bloqueo: {e}")
+        sys.exit(1)
+
+
+def main():
+    lock_file = "bot.lock"
+    lock_fd = None
+    try:
+        lock_fd = acquire_lock(lock_file)
         logger.info("Iniciando bot LUN.IA...")
-        updater = Updater(TOKEN, use_context=True)
-        dp = updater.dispatcher
-
-        # Agregar manejador de errores
-        dp.add_error_handler(error_handler)
-
-        note_conv_handler = ConversationHandler(
-            entry_points=[CommandHandler('anotar', ask_note)],
-            states={NOTE: [MessageHandler(Filters.text & ~Filters.command, save_note)]},
-            fallbacks=[CommandHandler('cancelar', cancel_note)]
-        )
-
-        dp.add_handler(CommandHandler('start', start))
-        dp.add_handler(CommandHandler('intro', intro))
-        dp.add_handler(CommandHandler('luna', moon))
-        dp.add_handler(CommandHandler('mantra', get_mantra))
-        dp.add_handler(CommandHandler('meditacion', get_meditacion))
-        dp.add_handler(CommandHandler('conjuro', get_conjuro))
-        dp.add_handler(note_conv_handler)
-        dp.add_handler(CommandHandler('logros', show_logros))
-        dp.add_handler(CommandHandler('contacto', contacto))
-
+        updater = create_bot()
         logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
-        
-        # Configurar polling con reintentos y manejo de errores de red
-        while True:
-            try:
-                updater.start_polling(timeout=30)
-                updater.idle()
-            except Exception as e:
-                logger.error(f"Error de conexión: {e}")
-                logger.info("Reintentando en 10 segundos...")
-                import time
-                time.sleep(10)
-                continue
-        
+        updater.start_polling()
+        updater.idle()
     except Exception as e:
         logger.error(f"Error al iniciar el bot: {e}")
         sys.exit(1)
+    finally:
+        # Limpiar archivo de bloqueo al salir
+        try:
+            if lock_fd:
+                lock_fd.close()
+            if os.path.exists(lock_file):
+                os.remove(lock_file)
+                logger.info("Archivo de bloqueo eliminado")
+        except:
+            pass
 
 if __name__ == "__main__":
     main()
