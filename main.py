@@ -326,26 +326,11 @@ def create_bot():
 
     return updater
 
-def acquire_lock(lock_file):
-    try:
-        f = open(lock_file, 'w')
-        try:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            logger.info("Bloqueo adquirido - iniciando bot único")
-            return f
-        except IOError:
-            logger.error("Ya hay una instancia del bot ejecutándose. Deteniendo.")
-            sys.exit(1)
-    except Exception as e:
-        logger.error(f"Error al crear archivo de bloqueo: {e}")
-        sys.exit(1)
-
+# Eliminar la función acquire_lock (líneas 329-342)
+# Refactorizar main para arrancar el bot directamente
 
 def main():
-    lock_file = "bot.lock"
-    lock_fd = None
     try:
-        lock_fd = acquire_lock(lock_file)
         logger.info("Iniciando bot LUN.IA...")
         updater = create_bot()
         logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
@@ -354,16 +339,6 @@ def main():
     except Exception as e:
         logger.error(f"Error al iniciar el bot: {e}")
         sys.exit(1)
-    finally:
-        # Limpiar archivo de bloqueo al salir
-        try:
-            if lock_fd:
-                lock_fd.close()
-            if os.path.exists(lock_file):
-                os.remove(lock_file)
-                logger.info("Archivo de bloqueo eliminado")
-        except:
-            pass
 
 if __name__ == "__main__":
     main()
