@@ -5,17 +5,14 @@ import random
 import locale
 import logging
 import sys
-import fcntl
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, BotCommand
 from telegram.ext import (
-    Updater, CommandHandler, MessageHandler, ConversationHandler
+    ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, ContextTypes, filters
 )
-from telegram.ext import filters
 from astral import LocationInfo
 from astral.moon import moonrise, phase
-from telegram.ext import ApplicationBuilder
 
 # Configurar logging
 logging.basicConfig(
@@ -32,7 +29,6 @@ if not TOKEN:
     logger.error("No se encontró el token de Telegram. Asegúrate de tener config.env con TELEGRAM_TOKEN")
     sys.exit(1)
 
-# Constantes y datos
 MOON_CYCLE_DAYS = 30
 NEW_MOON_THRESHOLD = 7
 FIRST_QUARTER_THRESHOLD = 15
@@ -64,32 +60,27 @@ CHANNEL_CHAT_ID = '@lun_ia_oficial'
 
 def get_moon_phase():
     try:
-        # Usar la librería astral para un cálculo más preciso
         moon_phase_value = phase(datetime.now())
-        
-        # Convertir el valor de fase (0-1) a índice de fase lunar
-        # 0 = Luna Nueva, 0.25 = Cuarto Creciente, 0.5 = Luna Llena, 0.75 = Cuarto Menguante
-        if moon_phase_value < 0.0625:  # 0-6.25%
-            return 0  # Luna Nueva
-        elif moon_phase_value < 0.1875:  # 6.25-18.75%
-            return 1  # Cuarto Creciente
-        elif moon_phase_value < 0.3125:  # 18.75-31.25%
-            return 1  # Cuarto Creciente
-        elif moon_phase_value < 0.4375:  # 31.25-43.75%
-            return 2  # Luna Llena
-        elif moon_phase_value < 0.5625:  # 43.75-56.25%
-            return 2  # Luna Llena
-        elif moon_phase_value < 0.6875:  # 56.25-68.75%
-            return 2  # Luna Llena
-        elif moon_phase_value < 0.8125:  # 68.75-81.25%
-            return 3  # Cuarto Menguante
-        elif moon_phase_value < 0.9375:  # 81.25-93.75%
-            return 3  # Cuarto Menguante
-        else:  # 93.75-100%
-            return 0  # Luna Nueva
+        if moon_phase_value < 0.0625:
+            return 0
+        elif moon_phase_value < 0.1875:
+            return 1
+        elif moon_phase_value < 0.3125:
+            return 1
+        elif moon_phase_value < 0.4375:
+            return 2
+        elif moon_phase_value < 0.5625:
+            return 2
+        elif moon_phase_value < 0.6875:
+            return 2
+        elif moon_phase_value < 0.8125:
+            return 3
+        elif moon_phase_value < 0.9375:
+            return 3
+        else:
+            return 0
     except Exception as e:
         logger.error(f"Error calculando fase lunar: {e}")
-        # Fallback al algoritmo anterior en caso de error
         now = datetime.now()
         r = (now.year % 100) % 19
         if r > 9:
@@ -132,10 +123,11 @@ def get_zodiac_sign():
             return sign
     return "Capricornio"
 
-def start(update, context):
-    update.message.reply_text("¡Bienvenid@! Usa /luna para ver el mensaje lunar de hoy, /intro para más info, o únete al canal: @lun_ia_oficial")
+# Handlers asíncronos
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Bienvenid@! Usa /luna para ver el mensaje lunar de hoy, /intro para más info, o únete al canal: @lun_ia_oficial")
 
-def intro(update, context):
+async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "🌙 ¡Bienvenid@ a LUN.IA!\n\n"
         "Aquí puedes recibir inspiración lunar diaria, rituales, mantras, meditaciones y tips.\n"
@@ -148,9 +140,9 @@ def intro(update, context):
         "/conjuro [tema]\n"
         "/contacto – Info y contacto"
     )
-    update.message.reply_text(msg)
+    await update.message.reply_text(msg)
 
-def moon(update, context):
+async def moon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         idx = get_moon_phase()
         phase_name = MOON_PHASE_NAMES[idx]
@@ -175,31 +167,27 @@ def moon(update, context):
             f"¿Quieres inspiración personalizada, mantras, meditaciones o anotar tus logros?\n"
             f"Habla conmigo en privado: @lun_ia_my_bot"
         )
-        update.message.reply_text(message)
+        await update.message.reply_text(message)
     except Exception as e:
         logger.error(f"Error en función moon: {e}")
         try:
-            update.message.reply_text("❌ Error al obtener información lunar. Intenta de nuevo.")
+            await update.message.reply_text("❌ Error al obtener información lunar. Intenta de nuevo.")
         except:
             logger.error("No se pudo enviar mensaje de error al usuario")
 
-def ask_note(update, context):
-    update.message.reply_text("¿Qué quieres anotar hoy? Escribe tu avance. Usa /cancelar para cancelar.")
+async def ask_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¿Qué quieres anotar hoy? Escribe tu avance. Usa /cancelar para cancelar.")
     return NOTE
 
-def save_note(update, context):
+async def save_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     note_text = update.message.text
     phase_idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[phase_idx]
     now = datetime.now().strftime('%Y-%m-%d')
-    
-    # Debug: mostrar la fase calculada
     moon_phase_value = phase(datetime.now())
     logger.info(f"Fase lunar calculada: {moon_phase_value:.3f} -> {phase_name} (índice: {phase_idx})")
-    
     note_entry = {"date": now, "phase": phase_name, "note": note_text}
-
     try:
         with open("user_notes.json", "r", encoding="utf-8") as f:
             notes = json.load(f)
@@ -208,14 +196,14 @@ def save_note(update, context):
     notes.setdefault(user_id, []).append(note_entry)
     with open("user_notes.json", "w", encoding="utf-8") as f:
         json.dump(notes, f, ensure_ascii=False, indent=2)
-    update.message.reply_text(f"✅ Nota guardada en {phase_name}. Usa /logros para ver tu historial.")
+    await update.message.reply_text(f"✅ Nota guardada en {phase_name}. Usa /logros para ver tu historial.")
     return ConversationHandler.END
 
-def cancel_note(update, context):
-    update.message.reply_text("❌ Anotación cancelada.")
+async def cancel_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Anotación cancelada.")
     return ConversationHandler.END
 
-def show_logros(update, context):
+async def show_logros(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     try:
         with open("user_notes.json", "r", encoding="utf-8") as f:
@@ -224,85 +212,79 @@ def show_logros(update, context):
         notes = {}
     user_notes = notes.get(user_id, [])
     if not user_notes:
-        update.message.reply_text("Aún no tienes logros. Usa /anotar para registrar tu avance.")
+        await update.message.reply_text("Aún no tienes logros. Usa /anotar para registrar tu avance.")
         return
     msg = "📒 *Tus notas recientes:*\n\n"
     for n in user_notes[-10:][::-1]:
         msg += f"{n['date']} ({n['phase']}): {n['note']}\n\n"
-    update.message.reply_text(msg, parse_mode='Markdown')
+    await update.message.reply_text(msg, parse_mode='Markdown')
 
-def get_mantra(update, context):
+async def get_mantra(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        update.message.reply_text("Uso: /mantra [tema]\nTemas disponibles: proyectos, amor, creatividad, abundancia, proteccion, limpieza")
+        await update.message.reply_text("Uso: /mantra [tema]\nTemas disponibles: proyectos, amor, creatividad, abundancia, proteccion, limpieza")
         return
-    
     theme = context.args[0].lower()
     phase_idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[phase_idx]
-    
     try:
         mantras = RITUALS_DATA[phase_name]["mantras"]
         if theme in mantras:
             mantra = random.choice(mantras[theme])
             message = f"🧘‍♀️ *Mantra para {theme} en {phase_name}:*\n\n{mantra}\n\n💫 Repítelo 3 veces al día para potenciar su efecto."
-            update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message, parse_mode='Markdown')
         else:
             available_themes = ", ".join(mantras.keys())
-            update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
+            await update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
     except KeyError:
-        update.message.reply_text(f"No hay mantras disponibles para {phase_name}.")
+        await update.message.reply_text(f"No hay mantras disponibles para {phase_name}.")
 
-def get_meditacion(update, context):
+async def get_meditacion(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        update.message.reply_text("Uso: /meditacion [tema]\nTemas disponibles: proyectos, amor, creatividad, abundancia, proteccion, limpieza")
+        await update.message.reply_text("Uso: /meditacion [tema]\nTemas disponibles: proyectos, amor, creatividad, abundancia, proteccion, limpieza")
         return
-    
     theme = context.args[0].lower()
     phase_idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[phase_idx]
-    
     try:
         meditaciones = RITUALS_DATA[phase_name]["meditaciones"]
         if theme in meditaciones:
             meditacion = random.choice(meditaciones[theme])
             message = f"🧘‍♀️ *Meditación para {theme} en {phase_name}:*\n\n{meditacion}\n\n✨ Dedica 5-10 minutos a esta práctica."
-            update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message, parse_mode='Markdown')
         else:
             available_themes = ", ".join(meditaciones.keys())
-            update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
+            await update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
     except KeyError:
-        update.message.reply_text(f"No hay meditaciones disponibles para {phase_name}.")
+        await update.message.reply_text(f"No hay meditaciones disponibles para {phase_name}.")
 
-def get_conjuro(update, context):
+async def get_conjuro(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        update.message.reply_text("Uso: /conjuro [tema]\nTemas disponibles: proteccion, abundancia, amor, creatividad, limpieza")
+        await update.message.reply_text("Uso: /conjuro [tema]\nTemas disponibles: proteccion, abundancia, amor, creatividad, limpieza")
         return
-    
     theme = context.args[0].lower()
     phase_idx = get_moon_phase()
     phase_name = MOON_PHASE_NAMES[phase_idx]
-    
     try:
         conjuros = RITUALS_DATA[phase_name]["conjuros"]
         if theme in conjuros:
             conjuro = random.choice(conjuros[theme])
             message = f"🔮 *Conjuro para {theme} en {phase_name}:*\n\n{conjuro}\n\n🌟 Realiza este ritual con intención y fe."
-            update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message, parse_mode='Markdown')
         else:
             available_themes = ", ".join(conjuros.keys())
-            update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
+            await update.message.reply_text(f"Tema '{theme}' no disponible para {phase_name}.\nTemas disponibles: {available_themes}")
     except KeyError:
-        update.message.reply_text(f"No hay conjuros disponibles para {phase_name}.")
+        await update.message.reply_text(f"No hay conjuros disponibles para {phase_name}.")
 
-def contacto(update, context):
-    update.message.reply_text("Puedes contactarme en Telegram: @divae\nGracias por usar LUN.IA 🌙")
+async def contacto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Puedes contactarme en Telegram: @divae\nGracias por usar LUN.IA 🌙")
 
-def error_handler(update, context):
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Error en el bot: {context.error}")
-    if update and update.effective_message:
-        update.effective_message.reply_text("❌ Ocurrió un error. Por favor, intenta de nuevo más tarde.")
+    if update and hasattr(update, 'effective_message') and update.effective_message:
+        await update.effective_message.reply_text("❌ Ocurrió un error. Por favor, intenta de nuevo más tarde.")
 
-def create_bot():
+async def main():
     application = ApplicationBuilder().token(TOKEN).build()
     application.add_error_handler(error_handler)
     note_conv_handler = ConversationHandler(
@@ -319,20 +301,9 @@ def create_bot():
     application.add_handler(note_conv_handler)
     application.add_handler(CommandHandler('logros', show_logros))
     application.add_handler(CommandHandler('contacto', contacto))
-    return application
-
-# Eliminar la función acquire_lock (líneas 329-342)
-# Refactorizar main para arrancar el bot directamente
-
-def main():
-    try:
-        logger.info("Iniciando bot LUN.IA...")
-        application = create_bot()
-        logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
-        application.run_polling()
-    except Exception as e:
-        logger.error(f"Error al iniciar el bot: {e}")
-        sys.exit(1)
+    logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
+    await application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())

@@ -72,6 +72,8 @@ echo 'TELEGRAM_TOKEN="tu_token_aqui"' > .env
 python main.py
 ```
 
+> **Nota:** El bot usa la API asíncrona de python-telegram-bot 20.x. Si usas Jupyter o entornos interactivos, consulta la documentación oficial para evitar errores de event loop.
+
 ## 📊 Estructura del Proyecto
 
 ```
@@ -90,7 +92,7 @@ lun_IA_bot/
 ## 🔧 Tecnologías Utilizadas
 
 - **Python 3.9+** - Lenguaje principal
-- **python-telegram-bot** - API de Telegram
+- **python-telegram-bot 20.x** - API de Telegram (API asíncrona, requiere Python 3.9+)
 - **astral** - Cálculos astronómicos
 - **python-dotenv** - Gestión de variables de entorno
 - **Pillow** - Manejo y detección de imágenes (reemplazo estándar de imghdr en Python 3.13+)
