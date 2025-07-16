@@ -93,6 +93,7 @@ lun_IA_bot/
 - **python-telegram-bot** - API de Telegram
 - **astral** - Cálculos astronómicos
 - **python-dotenv** - Gestión de variables de entorno
+- **Pillow** - Manejo y detección de imágenes (reemplazo estándar de imghdr en Python 3.13+)
 - **JSON** - Almacenamiento de datos
 
 ## 🌟 Características Técnicas
