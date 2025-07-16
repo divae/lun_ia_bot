@@ -1,4 +1,4 @@
-python-telegram-bot==12.8
+python-telegram-bot>=20.0,<21.0
 python-dotenv==1.1.1
 astral==3.2
 Pillow==11.3.0 

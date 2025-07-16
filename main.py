@@ -12,9 +12,10 @@ from telegram import Update, ReplyKeyboardMarkup, BotCommand
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, ConversationHandler
 )
-from telegram.ext import Filters
+from telegram.ext import filters
 from astral import LocationInfo
 from astral.moon import moonrise, phase
+from telegram.ext import ApplicationBuilder
 
 # Configurar logging
 logging.basicConfig(
@@ -302,29 +303,23 @@ def error_handler(update, context):
         update.effective_message.reply_text("❌ Ocurrió un error. Por favor, intenta de nuevo más tarde.")
 
 def create_bot():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
-
-    # Agregar manejador de errores
-    dp.add_error_handler(error_handler)
-
+    application = ApplicationBuilder().token(TOKEN).build()
+    application.add_error_handler(error_handler)
     note_conv_handler = ConversationHandler(
         entry_points=[CommandHandler('anotar', ask_note)],
-        states={NOTE: [MessageHandler(Filters.text & ~Filters.command, save_note)]},
+        states={NOTE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_note)]},
         fallbacks=[CommandHandler('cancelar', cancel_note)]
     )
-
-    dp.add_handler(CommandHandler('start', start))
-    dp.add_handler(CommandHandler('intro', intro))
-    dp.add_handler(CommandHandler('luna', moon))
-    dp.add_handler(CommandHandler('mantra', get_mantra))
-    dp.add_handler(CommandHandler('meditacion', get_meditacion))
-    dp.add_handler(CommandHandler('conjuro', get_conjuro))
-    dp.add_handler(note_conv_handler)
-    dp.add_handler(CommandHandler('logros', show_logros))
-    dp.add_handler(CommandHandler('contacto', contacto))
-
-    return updater
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('intro', intro))
+    application.add_handler(CommandHandler('luna', moon))
+    application.add_handler(CommandHandler('mantra', get_mantra))
+    application.add_handler(CommandHandler('meditacion', get_meditacion))
+    application.add_handler(CommandHandler('conjuro', get_conjuro))
+    application.add_handler(note_conv_handler)
+    application.add_handler(CommandHandler('logros', show_logros))
+    application.add_handler(CommandHandler('contacto', contacto))
+    return application
 
 # Eliminar la función acquire_lock (líneas 329-342)
 # Refactorizar main para arrancar el bot directamente
@@ -332,10 +327,9 @@ def create_bot():
 def main():
     try:
         logger.info("Iniciando bot LUN.IA...")
-        updater = create_bot()
+        application = create_bot()
         logger.info("Bot iniciado correctamente. Presiona Ctrl+C para detener.")
-        updater.start_polling()
-        updater.idle()
+        application.run_polling()
     except Exception as e:
         logger.error(f"Error al iniciar el bot: {e}")
         sys.exit(1)
